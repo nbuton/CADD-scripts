@@ -10,6 +10,7 @@ dependencies:
   - python
   - click
   - biopython
+  - mkl==2024.0
   - pytorch=1.13.1
   - pytorch-cuda=11.6
   - torchaudio=0.13.1

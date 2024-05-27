@@ -6,8 +6,9 @@ channels:
 dependencies:
   - numpy<=1.23.5
   - click
+  - biobambam=2.0.87
   - pyfaidx
   - pybedtools
-  - tensorflow-gpu
+  - tensorflow-gpu==2.14.0
   - seqiolib
   - vcfpy

@@ -49,14 +49,14 @@ def cli(
     variants_file, model_file, weights_file, reference_file, genome_file, output_file
 ):
     import os
-    os.environ["CUDA_VISIBLE_DEVICES"]="-1"    
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     import numpy as np
     import math
     import vcfpy
-
+    import vcf
+    from io import StringIO
     import copy
-
-    import tensorflow as tf
 
     from seqiolib import Interval, Encoder, VariantType, Variant
     from seqiolib import utils
@@ -97,7 +97,9 @@ def cli(
             return "chr" + chrom
 
     def variantToPybedtoolsInterval(record):
-        return pybedtools.Interval(getCorrectedChrom(record.CHROM), record.POS - 1, record.POS)
+        return pybedtools.Interval(
+            getCorrectedChrom(record.CHROM), record.POS - 1, record.POS
+        )
 
     def pybedtoolsIntervalToInterval(interval_pybed):
         return Interval(
@@ -107,7 +109,9 @@ def cli(
     # load variants
     click.echo("Loading variants...")
     records = []
-    vcf_reader = vcfpy.Reader.from_path(variants_file)
+    vcf_reader = vcf.Reader(
+        filename=variants_file
+    )  # vcfpy.Reader.from_path(variants_file)
 
     for record in vcf_reader:
         records.append(record)
@@ -157,8 +161,12 @@ def cli(
             for j in range(len(record.ALT)):
                 alt_record = record.ALT[j]
                 variant = Variant(
-                    getCorrectedChrom(record.CHROM), record.POS, record.REF, alt_record.value
+                    getCorrectedChrom(record.CHROM),
+                    record.POS,
+                    str(record.REF),
+                    str(alt_record),  # alt_record.value
                 )
+
                 # INDEL
                 if (
                     variant.type == VariantType.DELETION
@@ -195,6 +203,7 @@ def cli(
                                 "Cannot use variant %s because of wrong interval %s has wrong size after InDel Correction"
                                 % (str(variant), str(interval))
                             )
+                            print("Can be because INDEL is more than 250")
                     else:
                         print(
                             "Cannot use variant %s because interval %s has negative size"
@@ -215,8 +224,22 @@ def cli(
 
     num_targets = results_ref.shape[1] if len(results_alt.shape) > 1 else 1
 
+    all_header = vcf_reader._header_lines
+    all_header.append("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO")
+    str_header = "\n".join(all_header)
+    file_header = StringIO(str_header)
+    header_only_reader = vcfpy.Reader(file_header)
+
     for task_id in range(num_targets):
-        vcf_reader.header.add_info_line(
+        # one_header_line = (
+        #     "##INFO=<ID=RegSeq"
+        #     + str(task_id)
+        #     + ',Number=A,Type=Float,Description="Regulatory sequence prediction of the alt minus reference, output task '
+        #     + str(task_id)
+        #     + '">'
+        # )
+        # all_header.append(one_header_line)
+        header_only_reader.header.add_info_line(
             vcfpy.OrderedDict(
                 [
                     ("ID", "RegSeq%d" % task_id),
@@ -231,19 +254,48 @@ def cli(
             )
         )
 
-    vcf_writer = vcfpy.Writer.from_path(output_file, vcf_reader.header)
+    vcf_writer = vcfpy.Writer.from_path(output_file, header_only_reader.header)
+
+    class ALTFORVCFPY:
+        def __init__(self, alt) -> None:
+            self.alt = alt
+
+        def serialize(self):
+            return self.alt
 
     alt_idx = 0
     predict_idx = 0
     for i in range(len(records)):
-        record = records[i]
+        pyvcf_record = records[i]
+        print("CHROM:", pyvcf_record.CHROM)
+        if "chr" in pyvcf_record.CHROM.lower():
+            chrom = pyvcf_record.CHROM[3:]
+        else:
+            chrom = pyvcf_record.CHROM
+        record = vcfpy.Record(
+            CHROM=chrom,
+            POS=pyvcf_record.POS,
+            ID="",
+            REF=pyvcf_record.REF,
+            ALT=[ALTFORVCFPY(a) for a in pyvcf_record.REF],
+            QUAL=pyvcf_record.QUAL,
+            FILTER=[],
+            INFO=pyvcf_record.INFO,
+            FORMAT=pyvcf_record.FORMAT,
+        )
         to_add = {}
         for j in range(len(record.ALT)):
             if alt_idx in predict_avail_idx:
                 for task_id in range(num_targets):
                     to_add["RegSeq%d" % task_id] = to_add.get(
                         "RegSeq%d" % task_id, []
-                    ) + [round(results_alt[predict_idx][task_id] - results_ref[predict_idx][task_id],6)]
+                    ) + [
+                        round(
+                            results_alt[predict_idx][task_id]
+                            - results_ref[predict_idx][task_id],
+                            6,
+                        )
+                    ]
                 predict_idx += 1
             else:
                 for task_id in range(num_targets):
@@ -260,4 +312,7 @@ def cli(
 
 
 if __name__ == "__main__":
-    cli()
+    import tensorflow as tf
+
+    with tf.device("/device:GPU:0"):
+        cli()
