@@ -54,7 +54,7 @@ shift $((OPTIND-1))
 INFILE=$1
 
 echo "CADD-v1.7 (c) University of Washington, Hudson-Alpha Institute for Biotechnology and Berlin Institute of Health at Charité - Universitätsmedizin Berlin 2013-2023. All rights reserved."
-
+echo "I will use "$CORES" cores"
 set -ueo pipefail
 
 # check if input file does exist
@@ -112,7 +112,7 @@ fi
 # Setup temporary folder that is removed reliably on exit and is outside of
 # the CADD-scripts directory.
 TMP_FOLDER=$(mktemp -d)
-trap "rm -rf $TMP_FOLDER" ERR EXIT
+#trap "rm -rf $TMP_FOLDER" ERR EXIT
 
 # Temp files
 TMP_INFILE=$TMP_FOLDER/$NAME.$FILEFORMAT
@@ -127,7 +127,7 @@ snakemake $TMP_OUTFILE --use-conda --conda-prefix $CADD/envs/conda --cores $CORE
     --configfile $CONFIG --snakefile $CADD/Snakefile $VERBOSE
 
 mv $TMP_OUTFILE $OUTFILE
-rm $TMP_INFILE # is in temp folder, should not be necessary
+#rm $TMP_INFILE # is in temp folder, should not be necessary
 
 OUTFILE=$(echo $OUTFILE |  sed 's/^\.\///')
 echo -e "\nCADD scored variants written to file: $OUTFILE"
