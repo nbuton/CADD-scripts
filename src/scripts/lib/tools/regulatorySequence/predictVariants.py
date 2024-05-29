@@ -67,7 +67,7 @@ def cli(
     strategy = tf.distribute.MirroredStrategy()
 
     def loadAndPredict(sequences, model, variants=None):
-        max_size = 512
+        max_size = 2  # 512
         X = []
         all_prediction = None
         i = 0
@@ -156,7 +156,7 @@ def cli(
         nb_ignore = 0
         click.echo("Load reference and try to get ref and alt.")
         alt_idx = 0
-        for i in range(len(records)):
+        for i in range(10):  # len(records)):
             record = records[i]
             interval = intervals[i]
 
