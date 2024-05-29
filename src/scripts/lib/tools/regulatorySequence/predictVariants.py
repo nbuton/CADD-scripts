@@ -69,7 +69,12 @@ def cli(
 
     def show_available_memory():
         av = psutil.virtual_memory().available * 100 / psutil.virtual_memory().total
-        print("Available memory:", str(av) + "%")
+        print(
+            "Available memory:",
+            str(av) + " % - use memory:",
+            psutil.virtual_memory().used / 1.25e8,
+            "GB",
+        )
 
     def loadAndPredict(sequences, model, variants=None):
         max_size = 500000
