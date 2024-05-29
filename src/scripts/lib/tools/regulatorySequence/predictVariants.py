@@ -86,8 +86,10 @@ def cli(
                     all_prediction = prediction
                 else:
                     all_prediction = np.concatenate((all_prediction, prediction))
-        prediction = model.predict(np.array(X))
-        all_prediction = np.concatenate((all_prediction, prediction))
+                print("all_prediction:", all_prediction.shape)
+        if len(X) != 0:
+            prediction = model.predict(np.array(X))
+            all_prediction = np.concatenate((all_prediction, prediction))
         return all_prediction
 
     def extendIntervals(intervals, region_length, genome_file):
