@@ -67,7 +67,7 @@ def cli(
     strategy = tf.distribute.MirroredStrategy()
 
     def loadAndPredict(sequences, model, variants=None):
-        max_size = 10000
+        max_size = 100000
         X = []
         all_prediction = None
         i = 0
@@ -77,7 +77,7 @@ def cli(
             X.append(Encoder.one_hot_encode_along_channel_axis(sequence.getSequence()))
             i += 1
             if i % max_size == 0:
-                print("i:", i)
+                print("Batch:", i)
                 prediction = model.predict(np.array(X))
                 X = []
                 if all_prediction is None:
@@ -181,7 +181,7 @@ def cli(
                 )
                 variant_lenght = abs(len(record.REF) - len(alt_record))
                 if variant_lenght > 50:
-                    print("Ignore variant because to long, size of", variant_lenght)
+                    # print("Ignore variant because to long, size of", variant_lenght)
                     nb_ignore += 1
                     continue
 
@@ -236,7 +236,7 @@ def cli(
                     predict_avail_idx.add(alt_idx)
                 alt_idx += 1
         print(
-            f"Ignoring {nb_ignore} variants on a total of {len(sequences_alt)} variants"
+            f"Ignoring {nb_ignore} variants that are too long(more than 50bp) on a total of {len(sequences_alt)} variants"
         )
         click.echo("Predict reference...")
         results_ref = loadAndPredict(sequences_ref, model)
