@@ -72,7 +72,7 @@ def cli(
         mem = process.memory_info().rss
         print(
             "Used memory:",
-            mem / 1.25e8,
+            mem / 1e9,
             "GB",
         )
 
