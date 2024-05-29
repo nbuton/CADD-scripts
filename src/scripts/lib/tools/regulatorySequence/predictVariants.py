@@ -67,15 +67,28 @@ def cli(
     strategy = tf.distribute.MirroredStrategy()
 
     def loadAndPredict(sequences, model, variants=None):
+        max_size = 512
         X = []
+        all_prediction = None
         i = 0
         for sequence in sequences:
             if variants is not None:
                 sequence.replace(variants[i])
             X.append(Encoder.one_hot_encode_along_channel_axis(sequence.getSequence()))
             i += 1
+            if i % max_size == 0:
+                prediction = model.predict(np.array(X))
+                print(prediction)
+                print(type(prediction))
+                print(prediction.shape)
+                X = []
+                if all_prediction is None:
+                    all_prediction = prediction
+                else:
+                    all_prediction = np.concatenate((all_prediction, prediction))
         prediction = model.predict(np.array(X))
-        return prediction
+        all_prediction = np.concatenate((all_prediction, prediction))
+        return all_prediction
 
     def extendIntervals(intervals, region_length, genome_file):
         left = math.ceil((region_length - 1) / 2)
@@ -140,6 +153,7 @@ def cli(
         sequences_alt = []
         predict_avail_idx = set()
 
+        nb_ignore = 0
         click.echo("Load reference and try to get ref and alt.")
         alt_idx = 0
         for i in range(len(records)):
@@ -169,6 +183,7 @@ def cli(
                 variant_lenght = abs(len(record.REF) - len(alt_record))
                 if variant_lenght > 50:
                     print("Ignore variant because to long, size of", variant_lenght)
+                    nb_ignore += 1
                     continue
 
                 # INDEL
@@ -221,6 +236,9 @@ def cli(
                     sequences_ref.append(sequence_ref)
                     predict_avail_idx.add(alt_idx)
                 alt_idx += 1
+        print(
+            f"Ignoring {nb_ignore} variants on a total of {len(sequences_alt)} variants"
+        )
         click.echo("Predict reference...")
         results_ref = loadAndPredict(sequences_ref, model)
         click.echo("Predict alternative...")
