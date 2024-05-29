@@ -166,6 +166,10 @@ def cli(
                     str(record.REF),
                     str(alt_record),  # alt_record.value
                 )
+                variant_lenght = abs(len(record.REF) - len(alt_record))
+                if variant_lenght > 50:
+                    print("Ignore variant because to long, size of", variant_lenght)
+                    continue
 
                 # INDEL
                 if (
