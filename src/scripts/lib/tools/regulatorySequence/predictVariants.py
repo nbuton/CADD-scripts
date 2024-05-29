@@ -291,7 +291,6 @@ def cli(
     predict_idx = 0
     for i in range(len(records)):
         pyvcf_record = records[i]
-        print("CHROM:", pyvcf_record.CHROM)
         if "chr" in pyvcf_record.CHROM.lower():
             chrom = pyvcf_record.CHROM[3:]
         else:
