@@ -67,7 +67,7 @@ def cli(
     strategy = tf.distribute.MirroredStrategy()
 
     def loadAndPredict(sequences, model, variants=None):
-        max_size = 100000
+        max_size = 500000
         X = []
         all_prediction = None
         i = 0
