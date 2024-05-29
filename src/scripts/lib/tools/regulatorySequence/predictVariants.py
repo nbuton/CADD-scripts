@@ -1,4 +1,5 @@
 import click
+import psutil
 
 
 # options
@@ -66,6 +67,10 @@ def cli(
 
     strategy = tf.distribute.MirroredStrategy()
 
+    def show_available_memory():
+        av = psutil.virtual_memory().available * 100 / psutil.virtual_memory().total
+        print("Available memory:", str(av) + "%")
+
     def loadAndPredict(sequences, model, variants=None):
         max_size = 500000
         X = []
@@ -78,6 +83,7 @@ def cli(
             i += 1
             if i % max_size == 0:
                 print("Batch:", i)
+                show_available_memory()
                 prediction = model.predict(np.array(X))
                 X = []
                 if all_prediction is None:
