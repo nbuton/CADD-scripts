@@ -68,11 +68,11 @@ def cli(
     strategy = tf.distribute.MirroredStrategy()
 
     def show_available_memory():
-        av = psutil.virtual_memory().available * 100 / psutil.virtual_memory().total
+        process = psutil.Process(os.getpid())
+        mem = process.memory_info().rss
         print(
-            "Available memory:",
-            str(av) + " % - use memory:",
-            psutil.virtual_memory().used / 1.25e8,
+            "Used memory:",
+            mem / 1.25e8,
             "GB",
         )
 
