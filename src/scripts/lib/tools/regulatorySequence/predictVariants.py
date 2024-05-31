@@ -337,7 +337,7 @@ def cli(
                         "RegSeq%d" % task_id, []
                     ) + [np.nan]
             alt_idx += 1
-        if i % 10000 == 0:
+        if i % 100000 == 0:
             show_memory_usage()
         for key, value in to_add.items():
             record.INFO[key] = value
