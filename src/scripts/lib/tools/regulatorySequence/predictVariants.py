@@ -67,7 +67,7 @@ def cli(
 
     strategy = tf.distribute.MirroredStrategy()
 
-    def show_available_memory():
+    def show_memory_usage():
         process = psutil.Process(os.getpid())
         mem = process.memory_info().rss
         print(
@@ -88,7 +88,7 @@ def cli(
             i += 1
             if i % max_size == 0:
                 print("Batch:", i)
-                show_available_memory()
+                show_memory_usage()
                 prediction = model.predict(np.array(X))
                 X = []
                 if all_prediction is None:
@@ -337,7 +337,8 @@ def cli(
                         "RegSeq%d" % task_id, []
                     ) + [np.nan]
             alt_idx += 1
-
+        if i % 10000 == 0:
+            show_memory_usage()
         for key, value in to_add.items():
             record.INFO[key] = value
 
